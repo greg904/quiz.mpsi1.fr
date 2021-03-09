@@ -1,0 +1,11 @@
+# Build files
+/dist
+
+# NodeJS
+/node_modules
+
+# DB
+/questions.txt
+
+# IDK
+/.cache
