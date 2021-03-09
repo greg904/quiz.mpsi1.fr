@@ -2,14 +2,8 @@ import * as Discord from "discord.js";
 
 import { QuestionDatabase } from "./db";
 
-const CHANNEL_NAME = "mpsi1-fr-quiz";
+const CHANNEL_NAME = "quiz-mpsi-1";
 const WHITE_CHECK_MARK = "\u2705";
-
-function hasEnoughVotes(msg: Discord.Message) {
-    const r = msg.reactions.cache.find(r => r.emoji.name === WHITE_CHECK_MARK);
-    // One is added to the threshold to account for the bot's own reaction.
-    return r && r.count && r.count >= 2;
-}
 
 export default class DiscordBot {
     private db: QuestionDatabase
@@ -24,7 +18,7 @@ export default class DiscordBot {
         this.client.once("ready", () => {
             for (const g of this.client.guilds.cache.values()) {
                 // Weird syntax is because of a bug in typings.
-                const c = g.channels.cache.find(c => c.name === CHANNEL_NAME && c.type === "text") as Discord.TextChannel | undefined;
+                const c = g.channels.cache.find(c => c.name.includes(CHANNEL_NAME) && c.type === "text") as Discord.TextChannel | undefined;
                 if (!c)
                     return;
                 c.messages.fetch({ limit: 100 })
@@ -36,25 +30,25 @@ export default class DiscordBot {
             console.log("Discord client is ready.");
         });
         this.client.on("message", msg => {
-            if (msg.channel.type !== "text" || msg.channel.name !== CHANNEL_NAME)
+            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
                 return;
             this.processMessage(msg, false);
         });
         this.client.on("messageReactionAdd", (reaction, _user) => {
             const msg = reaction.message;
-            if (msg.channel.type !== "text" || msg.channel.name !== CHANNEL_NAME)
+            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
                 return;
             this.processMessage(msg, true);
         });
         this.client.on("messageReactionRemove", (reaction, _user) => {
             const msg = reaction.message;
-            if (msg.channel.type !== "text" || msg.channel.name !== CHANNEL_NAME)
+            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
                 return;
             this.processMessage(msg, false);
         });
         this.client.on("messageReactionRemoveEmoji", reaction => {
             const msg = reaction.message;
-            if (msg.channel.type !== "text" || msg.channel.name !== CHANNEL_NAME)
+            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
                 return;
             this.processMessage(msg, false);
         });
@@ -96,14 +90,14 @@ export default class DiscordBot {
         const lines = args.split("\n").map(l => l.trim()).filter(l => l !== "");
         if (lines.length < 2 || lines[0].length < 10) {
             if (!silent) {
-                msg.reply("Voici comment utiliser la commande :\n" +
-                    "!ajouter _question_\n" +
-                    "_bonne réponse_\n_mauvaise réponse_\n" +
-                    "_mauvaise réponse_\n... (Vous pouvez ajouter autant de mauvaises réponses que vous voulez.)\n");
+                msg.reply("Voici comment utiliser la commande :\n```\n" +
+                    "!ajouter [question]\n" +
+                    "[bonne réponse]\n[mauvaise réponse]\n" +
+                    "[mauvaise réponse]\n[mauvaise réponse]\n```");
             }
             return;
         }
-        if (!hasEnoughVotes(msg)) {
+        if (!this.hasEnoughVotes(msg)) {
             this.addReactionIfMissing(msg, WHITE_CHECK_MARK);
             return;
         }
@@ -118,8 +112,8 @@ export default class DiscordBot {
     private processDeleteQuestion(args: string, msg: Discord.Message, silent: boolean) {
         if (args === "") {
             if (!silent) {
-                msg.reply("Voici comment utiliser la commande :\n" + 
-                    "!supprimer _identifiant question_");
+                msg.reply("Voici comment utiliser la commande :\n```\n" + 
+                    "!supprimer [identifiant question]\n```");
             }
             return;
         }
@@ -129,11 +123,21 @@ export default class DiscordBot {
                 msg.reply("Le numéro de la question est invalide !");
             return;
         }
-        if (!hasEnoughVotes(msg)) {
+        if (!this.hasEnoughVotes(msg)) {
             this.addReactionIfMissing(msg, WHITE_CHECK_MARK);
             return;
         }
         this.db.removeById(id);
         msg.delete();
+    }
+
+    private hasEnoughVotes(msg: Discord.Message) {
+        const r = msg.reactions.cache.find(r => r.emoji.name === WHITE_CHECK_MARK);
+        if (!r || !r.count)
+            return false;
+        const votes = r.users.cache
+            .filter(u => u.id !== msg.author.id && u.id !== this.client.user!!.id)
+            .array().length;
+        return votes >= 3;
     }
 }

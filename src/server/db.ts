@@ -6,6 +6,7 @@ export interface Question {
     prompt: string
     correctAnswer: string
     incorrectAnswers: string[]
+    createdAt?: Date
 }
 
 const DB_FILE = "questions.txt";
@@ -36,56 +37,76 @@ export class QuestionDatabase {
             crlfDelay: Infinity,
         });
 
-        let currId: number | null = null;
-        let currPrompt: string | null = null;
-        let currCorrectAnswer: string | null = null;
-        let currIncorrectAnswers: string[] = [];
-        const flush = () => {
-            if (currPrompt === null)
+        class PartialQuestion {
+            id: number
+            prompt?: string
+            correctAnswer?: string
+            incorrectAnswers: string[] = []
+            createdAt?: Date
+
+            constructor(id: number) {
+                this.id = id;
+            }
+        }
+        let curr: PartialQuestion | null = null;
+        const finishCurr = () => {
+            if (curr === null)
                 return;
-            if (currId === null || currCorrectAnswer === null || currIncorrectAnswers.length === 0)
+            if (!curr.prompt || !curr.correctAnswer || curr.incorrectAnswers.length === 0 || !curr.createdAt)
                 throw new Error("missing fields for question");
             this.questions.push({
-                id: currId,
-                prompt: currPrompt,
-                correctAnswer: currCorrectAnswer,
-                incorrectAnswers: currIncorrectAnswers,
+                id: curr.id,
+                prompt: curr.prompt,
+                correctAnswer: curr.correctAnswer,
+                incorrectAnswers: curr.incorrectAnswers,
+                createdAt: curr.createdAt,
             });
-            if (currId > this.maxId)
-                this.maxId = currId;
-            currPrompt = null;
-            currCorrectAnswer = null;
-            currIncorrectAnswers = [];
+            if (curr.id > this.maxId)
+                this.maxId = curr.id;
+            curr = null;
         }
+
         for await (const line of rl) {
             if (line.startsWith("I: ")) {
-                currId = parseInt(line.substring(3));
-                if (!Number.isSafeInteger(currId) || currId < 0)
+                finishCurr();
+                const id = parseInt(line.substring(3));
+                if (!Number.isSafeInteger(id) || id < 0)
                     throw new Error("invalid question ID");
+                curr = new PartialQuestion(id);
             } else if (line.startsWith("Q: ")) {
-                flush();
-                currPrompt = line.substring(3);
+                if (!curr)
+                    throw new Error("missing question ID");
+                curr.prompt = line.substring(3);
             } else if (line.startsWith("A: ")) {
-                currCorrectAnswer = line.substring(3);
+                if (!curr)
+                    throw new Error("missing question ID");
+                curr.correctAnswer = line.substring(3);
             } else if (line.startsWith("F: ")) {
-                currIncorrectAnswers.push(line.substring(3));
+                if (!curr)
+                    throw new Error("missing question ID");
+                curr.incorrectAnswers.push(line.substring(3));
+            } else if (line.startsWith("C: ")) {
+                if (!curr)
+                    throw new Error("missing question ID");
+                curr.createdAt = new Date(line.substring(3));
             } else if (line !== "") {
                 console.error("Unrecognized line:", line);
             }
         }
-        flush();
+        finishCurr();
     }
 
     add(q: Question) {
         if (this.maxId === -1)
             throw new Error("DB was not loaded");
 
+        q.createdAt = new Date();
         // Find a new unique ID for the question.
         q.id = ++this.maxId;
 
         this.questions.push(q);
 
-        let data = `I: ${q.id}\nQ: ${q.prompt}\nA: ${q.correctAnswer}\n`;
+        let data = `I: ${q.id}\nC: ${q.createdAt.toISOString()}\nQ: ${q.prompt}\nA: ${q.correctAnswer}\n`;
         for (const a of q.incorrectAnswers)
             data += `F: ${a}\n`;
 

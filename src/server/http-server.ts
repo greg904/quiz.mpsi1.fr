@@ -11,7 +11,7 @@ export default class HttpServer {
         this.app = express();
         this.app.use(express.static("static"));
         this.app.use(express.static(path.join("dist", "client")));
-        this.app.get("/questions.json", (req, res) => {
+        this.app.get("/questions.json", (_req, res) => {
             res.json(db.questions);
         });
         this.app.listen(4000, "localhost", () => console.log("HTTP server listening..."));
