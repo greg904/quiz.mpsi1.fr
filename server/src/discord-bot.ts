@@ -132,13 +132,14 @@ export default class DiscordBot {
     }
 
     private hasEnoughVotes(msg: Discord.Message) {
+        const config = this.getChannelConfig(msg)!!;
         const r = msg.reactions.cache.find(r => r.emoji.name === WHITE_CHECK_MARK);
         if (!r || !r.count)
-            return false;
+            return config.voteThreshold === 0;
         const votes = r.users.cache
             .filter(u => u.id !== msg.author.id && u.id !== this.client.user!!.id)
             .array().length;
-        return votes >= this.getChannelConfig(msg)!!.voteThreshold;
+        return votes >= config.voteThreshold;
     }
 
     private getChannelConfig(msg: Discord.Message) {
