@@ -4,7 +4,7 @@ import "bootstrap/dist/css/bootstrap.css";
 import { Fragment, h, render } from "preact";
 import { useEffect, useState } from "preact/hooks";
 
-import { Question } from "../server/db";
+import { Question } from "../../server/src/db";
 
 // From https://stackoverflow.com/a/12646864.
 /* Randomize array in-place using Durstenfeld shuffle algorithm */
@@ -80,7 +80,7 @@ function QuestionSlide(props: QuestionSlideProps) {
     </Fragment>;
 }
 
-const enum QuestionSelection {
+enum QuestionSelection {
     All,
     LastN,
 }
@@ -120,7 +120,7 @@ function App() {
 
     const [questions, setQuestions] = useState<Question[] | null>(null);
     useEffect(function() {
-        fetch("/questions.json")
+        fetch(process.env.API_ENDPOINT + "questions")
             .then(res => res.json())
             .then(json => {
                 for (const question of json)

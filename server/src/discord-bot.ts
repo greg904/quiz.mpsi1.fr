@@ -1,54 +1,58 @@
 import * as Discord from "discord.js";
+import { ChannelConfig } from "./config";
 
-import { QuestionDatabase } from "./db";
+import { Database } from "./db";
 
-const CHANNEL_NAME = "quiz-mpsi-1";
 const WHITE_CHECK_MARK = "\u2705";
 
 export default class DiscordBot {
-    private db: QuestionDatabase
+    private db: Database
     private client: Discord.Client
+    private channelConfigs: ChannelConfig[]
     
-    constructor(db: QuestionDatabase, token: string) {
+    constructor(db: Database, token: string, channelConfigs: ChannelConfig[]) {
         this.db = db;
         this.client = new Discord.Client({
             partials: ["MESSAGE", "CHANNEL", "REACTION"],
             ws: { intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_MESSAGE_REACTIONS"] }
         });
+        this.channelConfigs = channelConfigs;
         this.client.once("ready", () => {
             for (const g of this.client.guilds.cache.values()) {
                 // Weird syntax is because of a bug in typings.
-                const c = g.channels.cache.find(c => c.name.includes(CHANNEL_NAME) && c.type === "text") as Discord.TextChannel | undefined;
-                if (!c)
-                    return;
-                c.messages.fetch({ limit: 100 })
-                    .then(msgs => {
-                        for (const m of msgs.values())
-                            this.processMessage(m, true);
-                    });
+                const channels = g.channels.cache
+                    .filter(c => c.type === "text" && this.channelConfigs.some(e => e.channel === c.name))
+                    .values();
+                for (const c of channels) {
+                    (c as Discord.TextChannel).messages.fetch({ limit: 100 })
+                        .then(msgs => {
+                            for (const m of msgs.values())
+                                this.processMessage(m, true);
+                        });
+                }
             }
             console.log("Discord client is ready.");
         });
         this.client.on("message", msg => {
-            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
+            if (!this.getChannelConfig(msg))
                 return;
             this.processMessage(msg, false);
         });
         this.client.on("messageReactionAdd", (reaction, _user) => {
             const msg = reaction.message;
-            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
+            if (!this.getChannelConfig(msg))
                 return;
             this.processMessage(msg, true);
         });
         this.client.on("messageReactionRemove", (reaction, _user) => {
             const msg = reaction.message;
-            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
+            if (!this.getChannelConfig(msg))
                 return;
             this.processMessage(msg, false);
         });
         this.client.on("messageReactionRemoveEmoji", reaction => {
             const msg = reaction.message;
-            if (msg.channel.type !== "text" || !msg.channel.name.includes(CHANNEL_NAME))
+            if (!this.getChannelConfig(msg))
                 return;
             this.processMessage(msg, false);
         });
@@ -101,11 +105,7 @@ export default class DiscordBot {
             this.addReactionIfMissing(msg, WHITE_CHECK_MARK);
             return;
         }
-        this.db.add({
-            prompt: lines[0],
-            correctAnswer: lines[1],
-            incorrectAnswers: lines.slice(2),
-        });
+        this.db.addQuestion(lines[0], lines[1], lines.slice(2));
         msg.delete();
     }
     
@@ -118,7 +118,7 @@ export default class DiscordBot {
             return;
         }
         const id = parseInt(args);
-        if (!Number.isSafeInteger(id) || !this.db.questions.some(q => q.id === id)) {
+        if (!Number.isSafeInteger(id) || !this.db.doesQuestionExist(id)) {
             if (!silent)
                 msg.reply("Le numéro de la question est invalide !");
             return;
@@ -127,7 +127,7 @@ export default class DiscordBot {
             this.addReactionIfMissing(msg, WHITE_CHECK_MARK);
             return;
         }
-        this.db.removeById(id);
+        this.db.deleteQuestion(id);
         msg.delete();
     }
 
@@ -138,6 +138,11 @@ export default class DiscordBot {
         const votes = r.users.cache
             .filter(u => u.id !== msg.author.id && u.id !== this.client.user!!.id)
             .array().length;
-        return votes >= 3;
+        return votes >= this.getChannelConfig(msg)!!.voteThreshold;
+    }
+
+    private getChannelConfig(msg: Discord.Message) {
+        return this.channelConfigs
+            .find(c => c.guildId === msg.guild?.id && msg.channel.type === "text" && msg.channel.name === c.channel)
     }
 }

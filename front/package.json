@@ -2,21 +2,24 @@
   "name": "mpsi1-fr-quiz",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/server/main.js",
+  "main": "dist/index.html",
+  "private": true,
   "scripts": {
-    "build-server": "tsc --build src/server/tsconfig.json",
-    "build-client": "parcel build src/client/index.html -d dist/client",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "NODE_ENV=development parcel serve ./src/index.html",
+    "build": "NODE_ENV=production parcel build ./src/index.html"
   },
-  "author": "",
   "license": "ISC",
+  "devDependencies": {
+    "parcel": "^2.0.0-beta.1"
+  },
   "dependencies": {
+    "@types/better-sqlite3": "^5.4.1",
     "@types/express": "^4.17.11",
     "@types/node": "^14.14.32",
+    "better-sqlite3": "^7.1.2",
     "bootstrap": "^5.0.0-beta2",
     "discord.js": "^12.5.1",
     "express": "^4.17.1",
-    "parcel-bundler": "1.12.3",
     "preact": "^10.5.12",
     "typescript": "^4.2.3"
   }

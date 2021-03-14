@@ -1,11 +1,6 @@
-# Build files
-/dist
+/front/node_modules
+/front/.parcel-cache
+/front/dist
 
-# NodeJS
-/node_modules
-
-# DB
-/questions.txt
-
-# IDK
-/.cache
+/server/node_modules
+/server/db.sqlite3
