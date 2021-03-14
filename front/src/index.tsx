@@ -93,7 +93,11 @@ interface MainMenuProps {
 function MainMenu(props: MainMenuProps) {
     return <Fragment>
         <h2 class="pb-2 mb-0">Jouer</h2>
-        <p class="pb-2 mb-0">Sur quelles questions souhaitez-vous vous entraîner ?</p>
+        <p class="pb-2 mb-0">
+            Essayez de bien lire les questions et non de répondre le
+            plus rapidement possible pour bien retenir l'information.<br/>
+            Sur quelles questions souhaitez-vous vous entraîner ?
+        </p>
         <div class="pb-5 mb-0">
             <button
                 type="button"
@@ -183,10 +187,10 @@ function App() {
     const [wrongAnswerCount, setWrongAnswerCount] = useState(0);
 
     const [currQuestion, setCurrQuestion] = useState(0);
-    if (currQuestion >= questions.length) {
+    if (currQuestion >= selectedQuestions.length) {
         return <Fragment>
             <p class="pb-2 mb-0">
-                C'est terminé. Vous avez fait <strong>{wrongAnswerCount}/{questions.length}</strong> fautes.
+                C'est terminé. Vous avez fait <strong>{wrongAnswerCount}/{selectedQuestions.length}</strong> fautes.
             </p>
             <div>
                 <button
