@@ -40,8 +40,8 @@ function QuestionSlide(props: QuestionSlideProps) {
     if (userAnswer !== -1) {
         const wasRight = answers[userAnswer].correct;
         const status = wasRight ? "Bravo !" : "Mauvaise réponse !";
-        result = <div class="mt-3">
-            <p>{status}</p>
+        result = <div class="pt-3">
+            <p class="pb-2 mb-0">{status}</p>
             <button
                 type="button"
                 class="btn btn-primary"
@@ -52,7 +52,7 @@ function QuestionSlide(props: QuestionSlideProps) {
     }
 
     return <Fragment>
-        <p class="lead">{props.question.prompt}</p>
+        <p class="lead">{props.question.question}</p>
         <dl class="row">
             <dt>ID</dt>
             <dd>{props.question.id}</dd>
@@ -67,7 +67,7 @@ function QuestionSlide(props: QuestionSlideProps) {
                 "primary";
             return <button
                 type="button"
-                class={`btn btn-outline-${type} d-block mb-2`}
+                class={`btn btn-outline-${type} d-block mb-1`}
                 disabled={hasAnswered}
                 onClick={_e => {
                     if (userAnswer === -1)
@@ -86,27 +86,57 @@ enum QuestionSelection {
 }
 
 interface MainMenuProps {
+    questionCount: number
     onChoose(s: QuestionSelection): void
 }
 
 function MainMenu(props: MainMenuProps) {
     return <Fragment>
-        <p>Sur quelles questions souhaitez-vous vous entraîner ?</p>
-        <div>
+        <h2 class="pb-2 mb-0">Jouer</h2>
+        <p class="pb-2 mb-0">Sur quelles questions souhaitez-vous vous entraîner ?</p>
+        <div class="pb-5 mb-0">
             <button
                 type="button"
-                class="btn btn-primary"
+                class="btn btn-primary mb-1 me-1"
                 onClick={() => props.onChoose(QuestionSelection.LastN)}>
-                Les 15 dernières questions
+                Les 10 dernières questions
             </button>
-            &nbsp;
             <button
                 type="button"
-                class="btn btn-secondary"
+                class="btn btn-secondary mb-1 me-1"
                 onClick={() => props.onChoose(QuestionSelection.All)}>
                 Toutes les questions
             </button>
         </div>
+
+        <h2 class="pb-2 mb-0">Modifier les questions</h2>
+        <p class="pb-4 mb-0">
+            Le quiz contient actuellement <strong>{props.questionCount}</strong> question(s).
+
+            Rejoignez le serveur Discord des MPSI, allez dans le channel
+            <code>❓-quiz-mpsi-1</code> puis envoyez un message suivant le
+            format décrit ci-dessous pour en ajouter ou en supprimer.
+        </p>
+        <h3 class="pb-2 mb-0">!ajouter</h3>
+        <p class="pb-2 mb-0">
+            Pour ajouter une question, utilisez la commande <kbd>!ajouter</kbd> :
+        </p>
+        <pre class="pb-4 mb-0">
+            <code>
+                !ajouter [question]{"\n"}
+                [bonne réponse]{"\n"}
+                [mauvaise réponse]{"\n"}
+                [mauvaise réponse]{"\n"}
+                [mauvaise réponse]
+            </code>
+        </pre>
+        <h3 class="pb-2 mb-0">!supprimer</h3>
+        <p>
+            Pour supprimer une question, utilisez la commande <kbd>!supprimer</kbd> :
+            <pre><code>
+            !supprimer [identifiant question]
+            </code></pre>
+        </p>
     </Fragment>;
 }
 
@@ -114,7 +144,7 @@ function App() {
     const [error, setError] = useState(false);
     if (error) {
         return <Fragment>
-            <p>Une erreur est survenue!</p>
+            <p>Une erreur est survenue !</p>
         </Fragment>;
     }
 
@@ -134,25 +164,30 @@ function App() {
             })
     }, []);
     if (!questions) {
-        return <Fragment>
-            <p>Chargement en cours...</p>
-        </Fragment>;
+        return <div class="spinner-border" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>;
     }
 
     const [selectedQuestions, setSelectedQuestions] = useState<Question[] | null>(null);
-    if (!selectedQuestions)
-        return <MainMenu onChoose={s => {
-            const tmp = s === QuestionSelection.All ? questions : questions.slice(0, 15);
-            shuffleArray(tmp);
-            setSelectedQuestions(tmp);
-        }}/>;
+    if (!selectedQuestions) {
+        return <MainMenu
+            questionCount={questions.length}
+            onChoose={s => {
+                const tmp = s === QuestionSelection.All ? questions : questions.slice(0, 10);
+                shuffleArray(tmp);
+                setSelectedQuestions(tmp);
+            }}/>;
+    }
 
     const [wrongAnswerCount, setWrongAnswerCount] = useState(0);
 
     const [currQuestion, setCurrQuestion] = useState(0);
     if (currQuestion >= questions.length) {
         return <Fragment>
-            <p>C'est terminé. Vous avez fait <strong>{wrongAnswerCount}/{questions.length}</strong> fautes.</p>
+            <p class="pb-2 mb-0">
+                C'est terminé. Vous avez fait <strong>{wrongAnswerCount}/{questions.length}</strong> fautes.
+            </p>
             <div>
                 <button
                     type="button"
