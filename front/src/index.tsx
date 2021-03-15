@@ -5,6 +5,7 @@ import { Fragment, h, render } from "preact";
 import { useEffect, useState } from "preact/hooks";
 
 import { Question } from "../../server/src/db";
+import { QuestionList } from "./QuestionList";
 
 // From https://stackoverflow.com/a/12646864.
 /* Randomize array in-place using Durstenfeld shuffle algorithm */
@@ -87,7 +88,8 @@ enum QuestionSelection {
 
 interface MainMenuProps {
     questionCount: number
-    onChoose(s: QuestionSelection): void
+    onClickPlay(s: QuestionSelection): void
+    onClickShowList(): void
 }
 
 function MainMenu(props: MainMenuProps) {
@@ -102,13 +104,13 @@ function MainMenu(props: MainMenuProps) {
             <button
                 type="button"
                 class="btn btn-primary mb-1 me-1"
-                onClick={() => props.onChoose(QuestionSelection.LastN)}>
+                onClick={() => props.onClickPlay(QuestionSelection.LastN)}>
                 Les 10 dernières questions
             </button>
             <button
                 type="button"
                 class="btn btn-secondary mb-1 me-1"
-                onClick={() => props.onChoose(QuestionSelection.All)}>
+                onClick={() => props.onClickPlay(QuestionSelection.All)}>
                 Toutes les questions
             </button>
         </div>
@@ -118,54 +120,73 @@ function MainMenu(props: MainMenuProps) {
             Le quiz contient actuellement <strong>{props.questionCount}</strong> question(s).
 
             Rejoignez le serveur Discord des MPSI, allez dans le channel
-            <code>❓-quiz-mpsi-1</code> puis envoyez un message suivant le
+            <code class="ps-1 pe-1">❓-quiz-mpsi-1</code> puis envoyez un message suivant le
             format décrit ci-dessous pour en ajouter ou en supprimer.
         </p>
         <h3 class="pb-2 mb-0">!ajouter</h3>
         <p class="pb-2 mb-0">
-            Pour ajouter une question, utilisez la commande <kbd>!ajouter</kbd> :
+            Pour ajouter une question, utilisez la commande <kbd>!ajouter</kbd>.<br/>
+            La deuxième ligne comporte la bonne réponse puis vous pouvez ajouter
+            autant de mauvaises réponses que vous voulez sur les lignes suivantes.
         </p>
         <pre class="pb-4 mb-0">
             <code>
-                !ajouter [question]{"\n"}
-                [bonne réponse]{"\n"}
-                [mauvaise réponse]{"\n"}
-                [mauvaise réponse]{"\n"}
-                [mauvaise réponse]
+                !ajouter <mark>[question]</mark>{"\n"}
+                <mark>[bonne réponse]</mark>{"\n"}
+                <mark>[mauvaise réponse]</mark>{"\n"}
+                <mark>[mauvaise réponse]</mark>{"\n"}
+                <mark>[mauvaise réponse]</mark>
             </code>
         </pre>
         <h3 class="pb-2 mb-0">!supprimer</h3>
-        <p>
+        <p class="pb-2 mb-0">
             Pour supprimer une question, utilisez la commande <kbd>!supprimer</kbd> :
-            <pre><code>
-            !supprimer [identifiant question]
-            </code></pre>
         </p>
+        <pre class="pb-5 mb-0">
+            <code>!supprimer <mark>[ID question]</mark></code>
+        </pre>
+
+        <h2 class="pb-2 mb-0">Liste de questions</h2>
+        <p>
+            Vous pouvez accéder à la liste de questions, par exemple pour
+            vérifier que la question que vous souhaitez ajouter n'est pas
+            déjà présente.
+        </p>
+        <button
+            type="button"
+            class="btn btn-secondary"
+            onClick={() => props.onClickShowList()}>
+            Afficher la liste de questions
+        </button>
     </Fragment>;
 }
 
 function App() {
     const [error, setError] = useState(false);
     if (error) {
-        return <Fragment>
-            <p>Une erreur est survenue !</p>
-        </Fragment>;
+        return <div class="alert alert-danger" role="alert">
+            Une erreur est survenue.
+        </div>;
     }
 
     const [questions, setQuestions] = useState<Question[] | null>(null);
     useEffect(function() {
-        fetch(process.env.API_ENDPOINT + "questions")
-            .then(res => res.json())
-            .then(json => {
+        const fetchQuestions = async () => {
+            try {
+                const res = await fetch(process.env.API_ENDPOINT + "questions")
+                if (!res.ok)
+                    throw new Error("Response is not OK")
+                const json = await res.json()
                 for (const question of json)
-                    question.createdAt = new Date(question.createdAt);
+                    question.createdAt = new Date(question.createdAt)
                 json.sort((a: Question, b: Question) => b.createdAt!!.valueOf() - a.createdAt!!.valueOf())
-                setQuestions(json);
-            })
-            .catch(err => {
-                console.error("Failed to load questions.", err);
-                setError(true);
-            })
+                setQuestions(json)
+            } catch (err) {
+                console.error("Failed to load questions.", err)
+                setError(true)
+            }
+        }
+        fetchQuestions()
     }, []);
     if (!questions) {
         return <div class="spinner-border" role="status">
@@ -173,14 +194,24 @@ function App() {
         </div>;
     }
 
+    const [showList, setShowList] = useState(false)
+    if (showList) {
+        return <QuestionList
+            questions={questions}
+            onClickBack={() => setShowList(false)}/>
+    }
+
     const [selectedQuestions, setSelectedQuestions] = useState<Question[] | null>(null);
     if (!selectedQuestions) {
         return <MainMenu
             questionCount={questions.length}
-            onChoose={s => {
+            onClickPlay={s => {
                 const tmp = s === QuestionSelection.All ? questions : questions.slice(0, 10);
                 shuffleArray(tmp);
                 setSelectedQuestions(tmp);
+            }}
+            onClickShowList={() => {
+                setShowList(true)
             }}/>;
     }
 
