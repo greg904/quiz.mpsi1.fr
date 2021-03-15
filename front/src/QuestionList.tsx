@@ -13,6 +13,10 @@ export function QuestionList(props: QuestionListProps) {
         props.onClickBack()
     }
 
+    // Sort by creation date (descending)
+    const questions = [...props.questions]
+        .sort((a, b) => b.createdAt.valueOf() - a.createdAt.valueOf())
+
     return <Fragment>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -29,8 +33,8 @@ export function QuestionList(props: QuestionListProps) {
                 </tr>
             </thead>
             <tbody>
-                {props.questions.map(q => {
-                    return <tr>
+                {questions.map((q, i) => {
+                    return <tr key={i}>
                         <th scope="row">{q.id}</th>
                         <th>{q.question}</th>
                     </tr>
