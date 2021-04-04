@@ -78,13 +78,14 @@ export default class DiscordBot {
     if (!msg.content.startsWith('!')) { return }
     let cmd: string
     let args: string
-    const space = msg.content.indexOf(' ', 1)
+    const afterBang = msg.content.substring(1).trim()
+    const space = afterBang.indexOf(' ', 1)
     if (space === -1) {
-      cmd = msg.content.substring(1)
+      cmd = afterBang
       args = ''
     } else {
-      cmd = msg.content.substring(1, space)
-      args = msg.content.substring(space + 1).trim()
+      cmd = afterBang.substring(0, space)
+      args = afterBang.substring(space + 1).trim()
     }
     switch (cmd) {
       case 'ajouter':
