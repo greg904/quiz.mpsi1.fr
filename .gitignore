@@ -3,4 +3,5 @@
 /front/dist
 
 /server/node_modules
+/server/dist
 /server/db.sqlite3
