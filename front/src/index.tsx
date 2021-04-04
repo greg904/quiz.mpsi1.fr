@@ -3,173 +3,60 @@ import 'bootstrap/dist/css/bootstrap.css'
 
 import { JSX, render } from 'preact'
 import { useEffect, useMemo, useState } from 'preact/hooks'
+import { BrowserRouter, Link, Route, Switch, useParams } from 'react-router-dom'
 
-import { Question } from '../../server/src/db'
+import * as net from './net'
+import { MainMenu } from './MainMenu'
 import { QuestionList } from './QuestionList'
+import { EndSlide } from './EndSlide'
+import { ProgressBar } from './ProgressBar'
+import { QuestionSlide } from './QuestionSlide'
+import shuffleArray from './shuffle-array'
 
-// From https://stackoverflow.com/a/12646864.
-/* Randomize array in-place using Durstenfeld shuffle algorithm */
-function shuffleArray (array: any[]): void {
-  for (var i = array.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1))
-    var temp = array[i]
-    array[i] = array[j]
-    array[j] = temp
-  }
+interface PlayRouteProps {
+  questions: net.Question[]
+  all?: boolean
 }
 
-function dateToString (date: Date): string {
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
-}
+function PlayRoute (props: PlayRouteProps): JSX.Element {
+  const { count: countStr }: { count?: string } = useParams()
 
-interface QuestionSlideProps {
-  question: Question
-  onNext: (wasRight: boolean) => void
-}
-
-function QuestionSlide (props: QuestionSlideProps): JSX.Element {
-  const answers = useMemo(() => {
-    const tmp = props.question.incorrectAnswers.map(a => ({ text: a, correct: false }))
-    tmp.push({ text: props.question.correctAnswer, correct: true })
+  const questions = useMemo(() => {
+    let tmp
+    if (props.all === true || countStr === undefined) {
+      tmp = props.questions
+    } else {
+      const count = parseInt(countStr)
+      tmp = props.questions.slice(0, count)
+    }
     shuffleArray(tmp)
     return tmp
-  }, [props.question.incorrectAnswers, props.question.correctAnswer])
+  }, [props.questions, props.all, countStr])
 
-  const [userAnswer, setUserAnswer] = useState(-1)
+  const [done, setDone] = useState(0)
+  const [wrongAnswers, setWrongAnswers] = useState(0)
 
-  let result = null
-  if (userAnswer !== -1) {
-    const wasRight = answers[userAnswer].correct
-    const status = wasRight ? 'Bravo !' : 'Mauvaise réponse !'
-    result = (
-      <div class='pt-3'>
-        <p class='pb-2 mb-0'>{status}</p>
-        <button
-          type='button'
-          class='btn btn-primary'
-          onClick={() => props.onNext(wasRight)}
-        >
-          Passer à la question suivante
-        </button>
-      </div>
-    )
+  if (done >= questions.length) {
+    return <EndSlide wrong={wrongAnswers} total={questions.length} />
   }
 
   return (
     <>
-      <p class='lead'>{props.question.question}</p>
-      <dl class='row'>
-        <dt>ID</dt>
-        <dd>{props.question.id}</dd>
-
-        <dt>Ajoutée le</dt>
-        <dd>{dateToString(props.question.createdAt)}</dd>
-      </dl>
-      {answers.map((a, i) => {
-        const hasAnswered = userAnswer !== -1
-        const type = hasAnswered
-          ? (a.correct ? 'success' : 'danger')
-          : 'primary'
-        return (
-          <button
-            key={i}
-            type='button'
-            class={`btn btn-outline-${type} d-block mb-1`}
-            disabled={hasAnswered}
-            onClick={_e => {
-              if (userAnswer === -1) { setUserAnswer(i) }
-            }}
-          >
-            {a.text}
-          </button>
-        )
-      })}
-      {result}
-    </>
-  )
-}
-
-enum QuestionSelection {
-  All,
-  LastN,
-}
-
-interface MainMenuProps {
-  questionCount: number
-  onClickPlay: (s: QuestionSelection) => void
-  onClickShowList: () => void
-}
-
-function MainMenu (props: MainMenuProps): JSX.Element {
-  return (
-    <>
-      <h2 class='pb-2 mb-0'>Jouer</h2>
-      <p class='pb-2 mb-0'>
-        Essayez de bien lire les questions et non de répondre le
-        plus rapidement possible pour bien retenir l'information.<br />
-        Sur quelles questions souhaitez-vous vous entraîner ?
-      </p>
-      <div class='pb-5 mb-0'>
-        <button
-          type='button'
-          class='btn btn-primary mb-1 me-1'
-          onClick={() => props.onClickPlay(QuestionSelection.LastN)}
-        >
-          Les 10 dernières questions
-        </button>
-        <button
-          type='button'
-          class='btn btn-secondary mb-1 me-1'
-          onClick={() => props.onClickPlay(QuestionSelection.All)}
-        >
-          Toutes les questions
-        </button>
-      </div>
-
-      <h2 class='pb-2 mb-0'>Modifier les questions</h2>
-      <p class='pb-4 mb-0'>
-        Le quiz contient actuellement <strong>{props.questionCount}</strong> question(s).
-
-        Rejoignez le serveur Discord des MPSI, allez dans le channel
-        <code class='ps-1 pe-1'>❓-quiz-mpsi-1</code> puis envoyez un message suivant le
-        format décrit ci-dessous pour en ajouter ou en supprimer.
-      </p>
-      <h3 class='pb-2 mb-0'>!ajouter</h3>
-      <p class='pb-2 mb-0'>
-        Pour ajouter une question, utilisez la commande <kbd>!ajouter</kbd>.<br />
-        La deuxième ligne comporte la bonne réponse puis vous pouvez ajouter
-        autant de mauvaises réponses que vous voulez sur les lignes suivantes.
-      </p>
-      <pre class='pb-4 mb-0'>
-        <code>
-          !ajouter <mark>[question]</mark>{'\n'}
-          <mark>[bonne réponse]</mark>{'\n'}
-          <mark>[mauvaise réponse]</mark>{'\n'}
-          <mark>[mauvaise réponse]</mark>{'\n'}
-          <mark>[mauvaise réponse]</mark>
-        </code>
-      </pre>
-      <h3 class='pb-2 mb-0'>!supprimer</h3>
-      <p class='pb-2 mb-0'>
-        Pour supprimer une question, utilisez la commande <kbd>!supprimer</kbd> :
-      </p>
-      <pre class='pb-5 mb-0'>
-        <code>!supprimer <mark>[ID question]</mark></code>
-      </pre>
-
-      <h2 class='pb-2 mb-0'>Liste de questions</h2>
-      <p>
-        Vous pouvez accéder à la liste de questions, par exemple pour
-        vérifier que la question que vous souhaitez ajouter n'est pas
-        déjà présente.
-      </p>
-      <button
-        type='button'
-        class='btn btn-secondary'
-        onClick={() => props.onClickShowList()}
-      >
-        Afficher la liste de questions
-      </button>
+      <nav aria-label='breadcrumb'>
+        <ol class='breadcrumb'>
+          <li class='breadcrumb-item'><Link to='/'>Accueil</Link></li>
+          <li class='breadcrumb-item active' aria-current='page'>Jouer</li>
+        </ol>
+      </nav>
+      <ProgressBar done={done} total={questions.length} class='mb-3' />
+      <QuestionSlide
+        key={done}
+        question={questions[done]}
+        onNext={wasRight => {
+          if (!wasRight) { setWrongAnswers(old => old + 1) }
+          setDone(old => old + 1)
+        }}
+      />
     </>
   )
 }
@@ -184,22 +71,20 @@ function App (): JSX.Element {
     )
   }
 
-  const [questions, setQuestions] = useState<Question[] | null>(null)
+  const [questions, setQuestions] = useState<net.Question[] | null>(null)
   useEffect(function (): void {
-    const fetchQuestions = async (): Promise<void> => {
-      try {
-        const res = await fetch(`${process.env.API_ENDPOINT ?? 'http://localhost:3000/'}questions`)
-        if (!res.ok) { throw new Error('Response is not OK') }
-        const json = await res.json()
-        for (const question of json) { question.createdAt = new Date(question.createdAt) }
-        json.sort((a: Question, b: Question) => b.createdAt.valueOf() - a.createdAt.valueOf())
-        setQuestions(json)
-      } catch (err) {
+    net.fetchQuestions()
+      .then(questions => {
+        // Sort questions so that the user can play the quiz with only the most
+        // recent questions.
+        questions.sort((a, b) => b.createdAt.valueOf() - a.createdAt.valueOf())
+
+        setQuestions(questions)
+      })
+      .catch(err => {
         console.error('Failed to load questions.', err)
         setError(true)
-      }
-    }
-    fetchQuestions().catch(() => {})
+      })
   }, [])
   if (questions == null) {
     return (
@@ -209,86 +94,52 @@ function App (): JSX.Element {
     )
   }
 
-  const [showList, setShowList] = useState(false)
-  if (showList) {
-    return (
-      <QuestionList
-        questions={questions}
-        onClickBack={() => setShowList(false)}
-      />
-    )
-  }
-
-  const [selectedQuestions, setSelectedQuestions] = useState<Question[] | null>(null)
-  if (selectedQuestions == null) {
-    return (
-      <MainMenu
-        questionCount={questions.length}
-        onClickPlay={s => {
-          const tmp = s === QuestionSelection.All ? questions : questions.slice(0, 10)
-          shuffleArray(tmp)
-          setSelectedQuestions(tmp)
-        }}
-        onClickShowList={() => {
-          setShowList(true)
-        }}
-      />
-    )
-  }
-
-  const [wrongAnswerCount, setWrongAnswerCount] = useState(0)
-
-  const [currQuestion, setCurrQuestion] = useState(0)
-  if (currQuestion >= selectedQuestions.length) {
-    return (
-      <>
-        <p class='pb-2 mb-0'>
-          C'est terminé. Vous avez fait <strong>{wrongAnswerCount}/{selectedQuestions.length}</strong> fautes.
-        </p>
-        <div>
-          <button
-            type='button'
-            class='d-block btn btn-primary'
-            onClick={() => {
-              setSelectedQuestions(null)
-              setWrongAnswerCount(0)
-              setCurrQuestion(0)
-            }}
-          >
-            Recommencer
-          </button>
-        </div>
-      </>
-    )
-  }
-
-  const completed = Math.floor(currQuestion / selectedQuestions.length * 100)
   return (
-    <>
-      <p>
-        <div class='progress'>
-          <div
-            class='progress-bar'
-            role='progressbar'
-            style={`width: ${completed}%;`}
-            aria-valuenow={completed}
-            aria-valuemin='0'
-            aria-valuemax='100'
-          >
-            {currQuestion}/{selectedQuestions.length}
-          </div>
-        </div>
-      </p>
-      <QuestionSlide
-        key={currQuestion}
-        question={questions[currQuestion]}
-        onNext={wasRight => {
-          if (!wasRight) { setWrongAnswerCount(old => old + 1) }
-          setCurrQuestion(currQuestion + 1)
-        }}
-      />
-    </>
+    <BrowserRouter>
+      <Switch>
+        <Route path='/' exact>
+          <nav aria-label='breadcrumb'>
+            <ol class='breadcrumb'>
+              <li class='breadcrumb-item active' aria-current='page'>Accueil</li>
+            </ol>
+          </nav>
+          <MainMenu questionCount={questions.length} />
+        </Route>
+        <Route path='/questions' exact>
+          <nav aria-label='breadcrumb'>
+            <ol class='breadcrumb'>
+              <li class='breadcrumb-item'><Link to='/'>Accueil</Link></li>
+              <li class='breadcrumb-item active' aria-current='page'>Liste des questions</li>
+            </ol>
+          </nav>
+          <QuestionList questions={questions} />
+        </Route>
+        <Route path='/jouer/:count(\d+)' exact>
+          <PlayRoute questions={questions} />
+        </Route>
+        <Route path='/jouer/tout' exact>
+          <PlayRoute questions={questions} all />
+        </Route>
+      </Switch>
+    </BrowserRouter>
   )
+
+  // const [showList, setShowList] = useState(false)
+  // if (showList) {
+  //   return (
+  //     <QuestionList
+  //       questions={questions}
+  //       onClickBack={() => setShowList(false)}
+  //     />
+  //   )
+  // }
+
+  // const [selectedQuestions, setSelectedQuestions] = useState<Question[] | null>(null)
+  // if (selectedQuestions == null) {
+  //   return (
+  //
+  //   )
+  // }
 }
 
 function runApp (): void {
