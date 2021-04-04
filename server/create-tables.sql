@@ -3,5 +3,6 @@ CREATE TABLE questions (
     question TEXT NOT NULL,
     correct_answer TEXT NOT NULL,
     incorrect_answers TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    submitter_discord_id TEXT NOT NULL
 );

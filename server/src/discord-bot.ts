@@ -113,7 +113,7 @@ export default class DiscordBot {
       this.addReactionIfMissing(msg, WHITE_CHECK_MARK)
       return
     }
-    this.db.addQuestion(lines[0], lines[1], lines.slice(2))
+    this.db.addQuestion(lines[0], lines[1], lines.slice(2), msg.author.id)
     msg.delete()
       .catch(err => {
         console.error('Failed to delete message', err)

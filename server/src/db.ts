@@ -32,9 +32,9 @@ export class Database {
   }
 
   // Adds a question to the database and returns its ID.
-  addQuestion (question: string, correctAnswer: string, incorrectAnswers: string[]): number {
-    const result = this.sql.prepare('INSERT INTO questions (question, correct_answer, incorrect_answers) VALUES (?, ?, ?)')
-      .run(question, correctAnswer, JSON.stringify(incorrectAnswers))
+  addQuestion (question: string, correctAnswer: string, incorrectAnswers: string[], submitterDiscordId: string): number {
+    const result = this.sql.prepare('INSERT INTO questions (question, correct_answer, incorrect_answers, submitter_discord_id) VALUES (?, ?, ?, ?)')
+      .run(question, correctAnswer, JSON.stringify(incorrectAnswers), submitterDiscordId)
     const id = result.lastInsertRowid
     return typeof id === 'string' ? parseInt(id) : id.valueOf()
   }
