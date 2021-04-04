@@ -1,14 +1,23 @@
-import { Database } from "./db";
-import DiscordBot from "./discord-bot";
-import HttpServer from "./http-server";
+import { Database } from './db'
+import DiscordBot from './discord-bot'
+import HttpServer from './http-server'
 
-import { getConfig } from "./config";
+import { getConfig } from './config'
 
-async function main() {
-    const config = getConfig();
-    const db = new Database(config.dbPath);
-    new DiscordBot(db, config.discordToken, config.channelConfigs);
-    new HttpServer(db, config.serverPort);
+async function main (): Promise<void> {
+  const config = getConfig()
+  const db = new Database(config.dbPath)
+
+  if (config.discordToken !== undefined) {
+    const bot = new DiscordBot(db, config.channelConfigs)
+    await bot.login(config.discordToken)
+  } else {
+    console.warn('No DISCORD_TOKEN set, Discord bot will not be running.')
+  }
+
+  const server = new HttpServer(db, config.serverPort)
+  await server.listen(config.serverPort)
+  console.log('HTTP server is listening on port', config.serverPort)
 }
 
-main().catch(console.error);
+main().catch(console.error)
