@@ -1,6 +1,3 @@
-import 'bootstrap'
-import 'bootstrap/dist/css/bootstrap.css'
-
 import { JSX, render } from 'preact'
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import { BrowserRouter, Link, Route, Switch, useParams } from 'react-router-dom'
@@ -42,7 +39,7 @@ function PlayRoute (props: PlayRouteProps): JSX.Element {
 
   return (
     <>
-      <nav aria-label='breadcrumb'>
+      <nav class='mb-4' aria-label='breadcrumb'>
         <ol class='breadcrumb'>
           <li class='breadcrumb-item'><Link to='/'>Accueil</Link></li>
           <li class='breadcrumb-item active' aria-current='page'>Jouer</li>
@@ -98,7 +95,7 @@ function App (): JSX.Element {
     <BrowserRouter>
       <Switch>
         <Route path='/' exact>
-          <nav aria-label='breadcrumb'>
+          <nav class='mb-4' aria-label='breadcrumb'>
             <ol class='breadcrumb'>
               <li class='breadcrumb-item active' aria-current='page'>Accueil</li>
             </ol>
@@ -106,7 +103,7 @@ function App (): JSX.Element {
           <MainMenu questionCount={questions.length} />
         </Route>
         <Route path='/questions' exact>
-          <nav aria-label='breadcrumb'>
+          <nav class='mb-4' aria-label='breadcrumb'>
             <ol class='breadcrumb'>
               <li class='breadcrumb-item'><Link to='/'>Accueil</Link></li>
               <li class='breadcrumb-item active' aria-current='page'>Liste des questions</li>

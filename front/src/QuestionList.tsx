@@ -20,7 +20,7 @@ export function QuestionList (props: QuestionListProps): JSX.Element {
           return (
             <tr key={i}>
               <th scope='row'>{q.id}</th>
-              <th>{q.question}</th>
+              <td>{q.question}</td>
             </tr>
           )
         })}

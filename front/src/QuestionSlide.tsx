@@ -21,20 +21,16 @@ export function QuestionSlide (props: QuestionSlideProps): JSX.Element {
   let result = null
   if (chosenAnswer !== -1) {
     const wasRight = answers[chosenAnswer].correct
-    const status = wasRight ? 'Bravo !' : 'Mauvaise réponse !'
     result = (
-      <div class='pt-3'>
-        <p class='pb-2 mb-0'>{status}</p>
-        <button
-          type='button'
-          class='btn btn-primary'
-          onClick={() => {
-            if (props.onNext !== undefined) { props.onNext(wasRight) }
-          }}
-        >
-          Passer à la question suivante
-        </button>
-      </div>
+      <button
+        type='button'
+        class='btn btn-primary'
+        onClick={() => {
+          if (props.onNext !== undefined) { props.onNext(wasRight) }
+        }}
+      >
+        Passer à la question suivante
+      </button>
     )
   }
 
@@ -49,22 +45,24 @@ export function QuestionSlide (props: QuestionSlideProps): JSX.Element {
         <dd>{props.question.createdAt.toLocaleDateString()}</dd>
       </dl>
       {answers.map((a, i) => {
-        const hasAnswered = chosenAnswer !== -1
-        const type = hasAnswered
-          ? (a.correct ? 'success' : 'danger')
-          : 'primary'
+        let className = 'answer'
+
+        if (chosenAnswer === i && !a.correct) {
+          className += ' answer--incorrect'
+        } else if (chosenAnswer !== -1 && a.correct) {
+          className += ' answer--correct'
+        }
+
         return (
-          <button
+          <p
             key={i}
-            type='button'
-            class={`btn btn-outline-${type} d-block mb-1`}
-            disabled={hasAnswered}
+            class={className}
             onClick={_e => {
               if (chosenAnswer === -1) { setChosenAnswer(i) }
             }}
           >
             {a.text}
-          </button>
+          </p>
         )
       })}
       {result}
