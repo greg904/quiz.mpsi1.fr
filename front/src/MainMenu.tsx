@@ -32,8 +32,8 @@ export function MainMenu (props: MainMenuProps): JSX.Element {
       <p class='mb-4'>
         Le quiz contient actuellement <strong>{props.questionCount}</strong> question(s).
 
-        Rejoignez le serveur Discord des MPSI, allez dans le channel
-        <code class='ps-1 pe-1'>❓-quiz-mpsi-1</code> puis envoyez un message suivant le
+        Rejoignez le serveur Discord, allez dans le channel
+        <code class='ps-1 pe-1'>❓-quiz-français</code> puis envoyez un message suivant le
         format décrit ci-dessous pour en ajouter ou en supprimer.
       </p>
       <h3>!ajouter</h3>
