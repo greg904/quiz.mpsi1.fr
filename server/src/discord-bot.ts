@@ -21,7 +21,7 @@ export default class DiscordBot {
       for (const g of this.client.guilds.cache.values()) {
         // Weird syntax is because of a bug in typings.
         const channels = g.channels.cache
-          .filter(c => c.type === 'text' && this.channelConfigs.some(e => e.channel === c.name))
+          .filter(c => c.type === 'text' && this.channelConfigs.some(e => e.channelId === c.id))
           .values()
         for (const c of channels) {
           (c as Discord.TextChannel).messages.fetch({ limit: 100 })
@@ -165,6 +165,6 @@ export default class DiscordBot {
 
   private getChannelConfig (msg: Discord.Message): ChannelConfig | undefined {
     return this.channelConfigs
-      .find(c => c.guildId === msg.guild?.id && msg.channel.type === 'text' && msg.channel.name === c.channel)
+      .find(c => c.guildId === msg.guild?.id && msg.channel.type === 'text' && msg.channel.id === c.channelId)
   }
 }

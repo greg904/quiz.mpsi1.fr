@@ -1,6 +1,6 @@
 export interface ChannelConfig {
   guildId: string
-  channel: string
+  channelId: string
   voteThreshold: number
 }
 
@@ -28,7 +28,7 @@ export function getConfig (): Config {
       const parts = c.split(':')
       return {
         guildId: parts[0],
-        channel: parts[1],
+        channelId: parts[1],
         voteThreshold: parseInt(parts[2])
       }
     })
