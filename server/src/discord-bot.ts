@@ -13,15 +13,14 @@ export default class DiscordBot {
   constructor (db: Database, channelConfigs: ChannelConfig[]) {
     this.db = db
     this.client = new Discord.Client({
-      partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
-      ws: { intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS'] }
+      intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS'],
     })
     this.channelConfigs = channelConfigs
     this.client.once('ready', () => {
-      for (const g of this.client.guilds.cache.values()) {
+      for (const [guildId, g] of this.client.guilds.cache) {
         // Weird syntax is because of a bug in typings.
         const channels = g.channels.cache
-          .filter(c => c.type === 'text' && this.channelConfigs.some(e => e.channelId === c.id))
+          .filter(c => c.type === 'GUILD_TEXT' && this.channelConfigs.some(e => e.guildId === guildId && e.channelId === c.id))
           .values()
         for (const c of channels) {
           (c as Discord.TextChannel).messages.fetch({ limit: 100 })
@@ -35,22 +34,25 @@ export default class DiscordBot {
       }
       console.log('Discord client is ready.')
     })
-    this.client.on('message', msg => {
+    this.client.on('messageCreate', msg => {
       if (this.getChannelConfig(msg) == null) { return }
       this.processMessage(msg, false)
     })
     this.client.on('messageReactionAdd', (reaction, _user) => {
       const msg = reaction.message
+      if (msg.partial) { return }
       if (this.getChannelConfig(msg) == null) { return }
       this.processMessage(msg, true)
     })
     this.client.on('messageReactionRemove', (reaction, _user) => {
       const msg = reaction.message
+      if (msg.partial) { return }
       if (this.getChannelConfig(msg) == null) { return }
       this.processMessage(msg, false)
     })
     this.client.on('messageReactionRemoveEmoji', reaction => {
       const msg = reaction.message
+      if (msg.partial) { return }
       if (this.getChannelConfig(msg) == null) { return }
       this.processMessage(msg, false)
     })
@@ -159,12 +161,12 @@ export default class DiscordBot {
     if (r === undefined || r.count === undefined || r.count === 0) { return config.voteThreshold === 0 }
     const votes = r.users.cache
       .filter(u => u.id !== msg.author.id && u.id !== (this.client.user as Discord.ClientUser).id)
-      .array().length
+      .reduce((acc, _) => acc + 1, 0)
     return votes >= config.voteThreshold
   }
 
   private getChannelConfig (msg: Discord.Message): ChannelConfig | undefined {
     return this.channelConfigs
-      .find(c => c.guildId === msg.guild?.id && msg.channel.type === 'text' && msg.channel.id === c.channelId)
+      .find(c => c.guildId === msg.guild?.id && msg.channel.type === 'GUILD_TEXT' && msg.channel.id === c.channelId)
   }
 }
