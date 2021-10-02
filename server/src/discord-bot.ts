@@ -13,7 +13,7 @@ export default class DiscordBot {
   constructor (db: Database, channelConfigs: ChannelConfig[]) {
     this.db = db
     this.client = new Discord.Client({
-      intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS'],
+      intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS']
     })
     this.channelConfigs = channelConfigs
     this.client.once('ready', () => {

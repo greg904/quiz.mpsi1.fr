@@ -5,7 +5,7 @@ import { Database } from './db'
 export default class HttpServer {
   app: express.Application
 
-  constructor (db: Database, port: number) {
+  constructor (db: Database) {
     this.app = express()
     this.app.get('/questions', (_req, res) => {
       try {

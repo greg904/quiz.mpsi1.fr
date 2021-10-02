@@ -120,23 +120,6 @@ function App (): JSX.Element {
       </Switch>
     </BrowserRouter>
   )
-
-  // const [showList, setShowList] = useState(false)
-  // if (showList) {
-  //   return (
-  //     <QuestionList
-  //       questions={questions}
-  //       onClickBack={() => setShowList(false)}
-  //     />
-  //   )
-  // }
-
-  // const [selectedQuestions, setSelectedQuestions] = useState<Question[] | null>(null)
-  // if (selectedQuestions == null) {
-  //   return (
-  //
-  //   )
-  // }
 }
 
 function runApp (): void {

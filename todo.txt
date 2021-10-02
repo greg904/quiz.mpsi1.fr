@@ -2,5 +2,3 @@
 - Implement spaced repetition like Quizlet.
 - Decrease dependencies and RAM usage of backend (maybe port to Rust)
 - Switch to a custom, human readable DB.
-- Lint code.
-- Do a quick pass over all code to make it okay enough to release.

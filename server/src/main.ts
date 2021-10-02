@@ -15,7 +15,7 @@ async function main (): Promise<void> {
     console.warn('No DISCORD_TOKEN set, Discord bot will not be running.')
   }
 
-  const server = new HttpServer(db, config.serverPort)
+  const server = new HttpServer(db)
   await server.listen(config.serverPort)
   console.log('HTTP server is listening on port', config.serverPort)
 }
